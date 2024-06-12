@@ -10,9 +10,11 @@ from django.views import View
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from core.models import Bank
+# from django.core.mail import EmailMultiAlternatives
+# from django.template.loader import render_to_string
 from .models import Transactions
 from accounts.models import UserBankAccount
-from .contants import DEPOSIT, LOAN, LOAN_PAID, WITHDRAWAL, SEND_MONEY, RECEIVE_MONEY
+from .contants import DEPOSIT, LOAN, LOAN_PAID, WITHDRAWAL, SEND_MONEY, RECEIVE_MONEY, send_mail_to_user
 from .forms import DepositForm, WithdrawalForm, LoanRequestForm, SendMoneyForm
 # Create your views here.
 
@@ -62,6 +64,21 @@ class SendMoneyView(TransactionCreateMixin):
         sender_account = self.request.user.account
         sender_account.balance -= amount
         sender_account.save(update_fields=['balance'])
+
+        sender_email = self.request.user.email
+        receiver_email = receiver_account.user.email
+
+        send_mail_to_user("Transfer money", 'transactions/transaction_sender_mail.html', {
+            'amount': amount,
+            'account_no': account_no,
+            'owner': self.request.user
+        }, sender_email)
+
+        send_mail_to_user("Transfer money", 'transactions/transaction_receiver_email.html', {
+            'amount': amount,
+            'account_no': sender_account.account_no,
+            'owner': receiver_account.user
+        }, receiver_email)
 
         messages.success(self.request, f"""{
                          amount} has been sent to Account:  {account_no}""")
