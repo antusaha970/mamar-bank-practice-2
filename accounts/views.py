@@ -3,9 +3,30 @@ from django.views.generic import FormView
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth import login, logout
 from django.views import View
+from django.contrib import messages
 from django.urls import reverse_lazy
-from .forms import UserRegistrationForm, UserUpdateForm
+from django.contrib.auth.views import PasswordChangeView
+from transactions.contants import send_mail_to_user
+import datetime
+from .forms import UserRegistrationForm, UserUpdateForm, UserPasswordChangeForm
 # Create your views here.
+
+
+class UserPasswordChangeView(PasswordChangeView):
+    template_name = 'accounts/password_change.html'
+    form_class = UserPasswordChangeForm
+    success_url = reverse_lazy("profile")
+
+    def form_valid(self, form):
+        current_datetime = datetime.datetime.now()
+
+        messages.success(self.request, f"""Your password has been changed""")
+
+        send_mail_to_user("You password has been changed", 'accounts/password_change_mail.html', {
+            'time': current_datetime.strftime("%A, %B %d, %Y")
+        }, self.request.user.email)
+
+        return super().form_valid(form)
 
 
 class UserRegistrationView(FormView):
